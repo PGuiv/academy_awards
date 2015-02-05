@@ -3,6 +3,7 @@ import sys
 import requests
 import logging
 import urllib.parse as urlparse
+import re
 from bs4 import BeautifulSoup
 
 logging.basicConfig(level=logging.DEBUG)
@@ -29,8 +30,8 @@ def printKeys():
 
     logger.debug(movies)
 
-    for title, data in movies.items():
-        logger.debug("Title: " + title + " - budget " + data['budget'])
+    for year, data in movies.items():
+        logger.debug("Year: " + year + "Title: " + data['title'] + ", budget: [dolls:" + data['budget']['dollars'] + ", pounds: " + data['budget']['pounds'] + "]")
 
 def get_winning_movies(url):
     """Get the list of Movie Titles, the year of the award and the URL of the wikipedia permalink"""
@@ -40,34 +41,33 @@ def get_winning_movies(url):
 
     k = 0
     for table in BeautifulSoup(response.text).select('.wikitable'):
-      #if k == 0:
-      #Extract year of the award
-      years = table.find('caption').find('big').findChildren('a', recursive=False)
-      logger.debug(years)
-      award_year = formatYear(years)
+      if k < 10:
+        #Extract year of the award
+        years = table.find('caption').find('big').findChildren('a', recursive=False)
+        logger.debug(years)
+        award_year = formatYear(years)
 
-      #logger.debug(award_year)
+        #logger.debug(award_year)
 
 
 
-      #Extract Movie URL
-      line = table.select('tr')[1].select('a')
-      #logger.debug(line)
-      movie_url = line[0]['href']
-      movie_title = line[0]['title']
-      #logger.debug(movie_url)
-      logger.debug(movie_title)
+        #Extract Movie URL
+        line = table.select('tr')[1].select('a')
+        #logger.debug(line)
+        movie_url = line[0]['href']
+        movie_title = line[0]['title']
+        #logger.debug(movie_url)
+        logger.debug(movie_title)
 
-      budget = get_budget(absolutePath(movie_url))
+        budget = get_budget(absolutePath(movie_url))
 
-      movies[movie_title] = {}
-      movies[movie_title]['url'] = movie_url
-      movies[movie_title]['title'] = movie_title
-      movies[movie_title]['year'] = award_year
-      movies[movie_title]['budget'] = budget
+        movies[award_year] = {}
+        movies[award_year]['url'] = movie_url
+        movies[award_year]['title'] = movie_title
+        movies[award_year]['budget'] = budget
 
-      #logger.debug(s_movies)
-      k += 1
+        #logger.debug(s_movies)
+        k += 1
     return movies
 
 def get_budget(movie_url):
@@ -84,8 +84,10 @@ def get_budget(movie_url):
     else:
         budget = 'NO BUDGET'
     #logger.debug(budget)
+    
+    #TODO: GET CURRENCY
 
-    return str(budget)
+    return extractBudget(budget)
 
     #for elem in BeautifulSoup(response.text).select('.infobox')[0].select('tr'):
 
@@ -107,14 +109,15 @@ def average_budget(movies):
 def formatYear(years):
     result = ""
     if len(years) == 1:
-        result = years[0] 
+        result = years[0].encode_contents().decode("utf-8")
+        logger.debug(result)
     else:
         k = 0
         for year in years:
             if k == 0:
-                result += str(year.contents)
+                result += str(year.encode_contents().decode("utf-8"))
             else:
-                result += " - " + str(year.contents)
+                result += " - " + str(year.encode_contents().decode("utf-8"))
             k += 1
 
     return result
@@ -124,7 +127,41 @@ def absolutePath(relative_path, domain = WIKI_URL):
     logger.debug(url)
     return url
 
+def extractBudget(budgetText):
+    #Get beginning: $, US$ or £
+    #p = re.compile(r'(\d+,)*')
+    #p = re.compile(r'£\d{1,3}(?:\,\d{3})+(?:\.\d{2})?')
+    logger.debug(re.findall(r'[£\$](\d+(?:\,\d{3})+|\d+)', budgetText))
+    dolls = (re.findall(r'\$(\d+(?:\,\d{3})+|\d+)', budgetText)[0] if len(re.findall(r'\$(\d+(?:\,\d{3})+|\d+)', budgetText)) > 0 else '')
+    pounds = (re.findall(r'£(\d+(?:\,\d{3})+|\d+)', budgetText)[0] if len(re.findall(r'£(\d+(?:\,\d{3})+|\d+)', budgetText)) > 0 else '')
+    budget = {'dollars': dolls, 'pounds': pounds}
+    logger.debug(budget)
+    #logger.debug('dolls' + dolls)
+    #logger.debug('pounds' + pounds)
+    return budget
+    
+
 if __name__ == '__main__':
     #get_budget(absolutePath('/wiki/Wings_(1927_film)'))
     #main()
-    printKeys()
+    #printKeys()
+
+    #TODO: PUT THAT IN TESTS
+    budgets = [
+    "$6 million[1][2]", 
+    "$750,000[1]", 
+    "$1,650,000", 
+    "$1,985,000[1]", 
+    "£8 million ($15 million)[3]", 
+    "US$1,644,736 (est.)", 
+    "$2,840,000.[2]", 
+    "£527,530[1]", 
+    "£3 million"
+    ]
+
+    logger.debug(budgets)
+    result = []
+    for budget in budgets:
+        result.append(extractBudget(budget))
+
+    #logger.debug(result)
