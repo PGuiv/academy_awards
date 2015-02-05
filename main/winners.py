@@ -31,7 +31,7 @@ def printKeys():
     logger.debug(movies)
 
     for year, data in movies.items():
-        logger.debug("Year: " + year + "Title: " + data['title'] + ", budget: [dolls:" + data['budget']['dollars'] + ", pounds: " + data['budget']['pounds'] + "]")
+        logger.debug("Year: " + year + ", Title: " + data['title'] + ", budget: [dolls:" + str(data['budget']['dollars']) + ", pounds: " + str(data['budget']['pounds']) + "]")
 
 def get_winning_movies(url):
     """Get the list of Movie Titles, the year of the award and the URL of the wikipedia permalink"""
@@ -131,20 +131,36 @@ def extractBudget(budgetText):
     #Get beginning: $, US$ or £
     #p = re.compile(r'(\d+,)*')
     #p = re.compile(r'£\d{1,3}(?:\,\d{3})+(?:\.\d{2})?')
-    logger.debug(re.findall(r'[£\$](\d+(?:\,\d{3})+|\d+)', budgetText))
-    dolls = (re.findall(r'\$(\d+(?:\,\d{3})+|\d+)', budgetText)[0] if len(re.findall(r'\$(\d+(?:\,\d{3})+|\d+)', budgetText)) > 0 else '')
-    pounds = (re.findall(r'£(\d+(?:\,\d{3})+|\d+)', budgetText)[0] if len(re.findall(r'£(\d+(?:\,\d{3})+|\d+)', budgetText)) > 0 else '')
+    if re.match(r'\$(\d+ million)', budgetText):
+      dolls = cleanNumber(re.findall(r'\$(\d+)', budgetText)[0]) * 1000000
+    elif re.match(r'\$(\d+(?:\,\d{3})+|\d+)', budgetText):
+      dolls = cleanNumber(re.findall(r'\$(\d+(?:\,\d{3})+|\d+)', budgetText)[0])
+    else:
+      dolls = '' 
+
+    if re.match(r'£(\d+ million)', budgetText):
+      pounds = cleanNumber(re.findall(r'£(\d+)', budgetText)[0]) * 1000000
+    elif re.match(r'£(\d+(?:\,\d{3})+|\d+)', budgetText):
+      pounds = cleanNumber(re.findall(r'£(\d+(?:\,\d{3})+|\d+)', budgetText)[0])
+    else:
+      pounds = ''
+
+    if dolls == '' and pounds == '':
+      logger.warning('NO BUDGET FOUND' + budgetText)
+
     budget = {'dollars': dolls, 'pounds': pounds}
     logger.debug(budget)
     #logger.debug('dolls' + dolls)
     #logger.debug('pounds' + pounds)
     return budget
     
+def cleanNumber(string):
+    return int(float(string.strip().replace(',','')))
 
 if __name__ == '__main__':
     #get_budget(absolutePath('/wiki/Wings_(1927_film)'))
     #main()
-    #printKeys()
+    printKeys()
 
     #TODO: PUT THAT IN TESTS
     budgets = [
@@ -159,9 +175,9 @@ if __name__ == '__main__':
     "£3 million"
     ]
 
-    logger.debug(budgets)
-    result = []
-    for budget in budgets:
-        result.append(extractBudget(budget))
+    #logger.debug(budgets)
+    #result = []
+    #for budget in budgets:
+    #    result.append(extractBudget(budget))
 
     #logger.debug(result)
