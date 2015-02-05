@@ -5,6 +5,9 @@ import logging
 import urllib.parse as urlparse
 import re
 from bs4 import BeautifulSoup
+from Movie import  Movie
+from CustomDevise import CustomDevise
+from Budget import Budget
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -131,19 +134,26 @@ def extractBudget(budgetText):
     #Get beginning: $, US$ or £
     #p = re.compile(r'(\d+,)*')
     #p = re.compile(r'£\d{1,3}(?:\,\d{3})+(?:\.\d{2})?')
-    if re.match(r'\$(\d+ million)', budgetText):
-      dolls = cleanNumber(re.findall(r'\$(\d+)', budgetText)[0]) * 1000000
-    elif re.match(r'\$(\d+(?:\,\d{3})+|\d+)', budgetText):
-      dolls = cleanNumber(re.findall(r'\$(\d+(?:\,\d{3})+|\d+)', budgetText)[0])
+    if re.match(r'\$(\d+(?:\,\d{0,3})*(?:\.\d{0,3})* million)', budgetText):
+      dolls = cleanNumber(re.findall(r'\$(\d+(?:\,\d{0,3})*(?:\.\d{0,3})*)', budgetText)[0]) * 1000000
+    elif re.match(r'\$(\d+(?:\,\d{3})+(?:\.\d{0,3})*|\d+(?:\.\d{0,3})*)', budgetText):
+      dolls = cleanNumber(re.findall(r'\$(\d+(?:\,\d{3})+(?:\.\d{0,3})*|\d+(?:\.\d{0,3})*)', budgetText)[0])
     else:
       dolls = '' 
 
-    if re.match(r'£(\d+ million)', budgetText):
-      pounds = cleanNumber(re.findall(r'£(\d+)', budgetText)[0]) * 1000000
-    elif re.match(r'£(\d+(?:\,\d{3})+|\d+)', budgetText):
-      pounds = cleanNumber(re.findall(r'£(\d+(?:\,\d{3})+|\d+)', budgetText)[0])
+    if re.match(r'£(\d+(?:\,\d{0,3})*(?:\.\d{0,3})* million)', budgetText):
+      pounds = cleanNumber(re.findall(r'£(\d+(?:\,\d{0,3})*(?:\.\d{0,3})*)', budgetText)[0]) * 1000000
+    elif re.match(r'£(\d+(?:\,\d{3})+(?:\.\d{0,3})*|\d+(?:\.\d{0,3})*)', budgetText):
+      pounds = cleanNumber(re.findall(r'£(\d+(?:\,\d{3})+(?:\.\d{0,3})*|\d+(?:\.\d{0,3})*)', budgetText)[0])
     else:
       pounds = ''
+
+    # if re.match(r'£(\d+ million)', budgetText):
+    #   pounds = cleanNumber(re.findall(r'£(\d+)', budgetText)[0]) * 1000000
+    # elif re.match(r'£(\d+(?:\,\d{3})+|\d+)', budgetText):
+    #   pounds = cleanNumber(re.findall(r'£(\d+(?:\,\d{3})+|\d+)', budgetText)[0])
+    # else:
+    #   pounds = ''
 
     if dolls == '' and pounds == '':
       logger.warning('NO BUDGET FOUND' + budgetText)
@@ -160,7 +170,7 @@ def cleanNumber(string):
 if __name__ == '__main__':
     #get_budget(absolutePath('/wiki/Wings_(1927_film)'))
     #main()
-    printKeys()
+    #printKeys()
 
     #TODO: PUT THAT IN TESTS
     budgets = [
@@ -172,7 +182,9 @@ if __name__ == '__main__':
     "US$1,644,736 (est.)", 
     "$2,840,000.[2]", 
     "£527,530[1]", 
-    "£3 million"
+    "£3 million",
+    "£3.1 million",
+    "$3.1 million"
     ]
 
     #logger.debug(budgets)
@@ -181,3 +193,9 @@ if __name__ == '__main__':
     #    result.append(extractBudget(budget))
 
     #logger.debug(result)
+    usd = CustomDevise('USD', 1000000)
+    gbp = CustomDevise('GBP', 20000)
+    budget = Budget(usd)
+    budget.addPrice(gbp)
+    movie = Movie('My Title', budget, '/super/movie')
+    logger.debug(str(movie))
