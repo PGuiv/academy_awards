@@ -90,6 +90,7 @@ class AwardCrawler:
       """Get the budget for each movie, based on wikipedia permalink"""
       try:
           response = requests.get(movie_url)
+          logger.debug(response.encoding)
       except:
           logger.warning("Problem with the URL: " + movie_url)
   
@@ -123,7 +124,7 @@ class AwardCrawler:
       return url
   
   def formatBudget(self, budgetText):
-      if re.match(r'\$(\d+(?:\,\d{0,3})*(?:\.\d{0,3})*\smillion)', budgetText):
+      if re.match(r'\$(\d+(?:\S\d+)*(?:\,\d{0,3})*(?:\.\d{0,3})*\smillion)', budgetText):
         doll_value = self.cleanNumber(re.findall(r'\$(\d+(?:\,\d{0,3})*(?:\.\d{0,3})*)', budgetText)[0]) * 1000000
       elif re.match(r'\$(\d+(?:\,\d{3})+(?:\.\d{0,3})*|\d+(?:\.\d{0,3})*)', budgetText):
         doll_value = self.cleanNumber(re.findall(r'\$(\d+(?:\,\d{3})+(?:\.\d{0,3})*|\d+(?:\.\d{0,3})*)', budgetText)[0])
@@ -183,15 +184,16 @@ if __name__ == '__main__':
       "US$2 million[4]",
       "$2.183 million",
       "$55 million",
-      "$6-7 million"
+      "$6-7 million",
+      "$6–7 million[1][2]"
       ]
   
-      #logger.debug(budgets)
-      #result = []
-      #for budget in budgets:
-      #    result.append(str(AwardCrawler().formatBudget(budget)))
+      logger.debug(budgets)
+      result = []
+      for budget in budgets:
+          result.append(str(AwardCrawler().formatBudget(budget)))
   
-      #logger.debug(result)
+      logger.debug(result)
 
       #usd = Amount('USD', 1000000)
       #gbp = Amount('GBP', 20000)
@@ -214,4 +216,5 @@ if __name__ == '__main__':
       #logger.debug(str(budget1))
       #logger.debug(str(budget2))
 
-      logger.debug(AwardCrawler().getBudget('http://en.wikipedia.org/wiki/Forrest_Gump'))
+      #logger.debug(AwardCrawler().getBudget('http://en.wikipedia.org/wiki/Forrest_Gump'))
+      logger.debug(AwardCrawler().getBudget('http://en.wikipedia.org/wiki/The_Godfather'))
