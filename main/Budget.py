@@ -19,3 +19,9 @@ class Budget(object):
 
     def addAmount(self, amount):
         self.amounts.append(amount)
+
+    def getAmount(self, currency, convert = False):
+
+        for amount in self.amounts:
+            if amount.currency == currency:
+                return amount
