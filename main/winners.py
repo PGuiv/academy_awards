@@ -4,23 +4,15 @@ import requests
 import urllib.parse as urlparse
 import re
 from bs4 import BeautifulSoup
-import logging
 
 from Movie import  Movie
 from Amount import Amount
 from Budget import Budget
 from Award import Award
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
-# create a file handler
-handler = logging.FileHandler('hello.log')
-handler.setLevel(logging.DEBUG)
-# create a logging format
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
-# add the handlers to the logger
-logger.addHandler(handler)
+import customLog
+logger = customLog.setup_custom_logger('root')
+logger.debug('main message')
 
 
 class AwardCrawler:
@@ -59,7 +51,7 @@ class AwardCrawler:
   
       k = 0
       for table in BeautifulSoup(response.text).select('.wikitable'):
-        if k < 100:
+        if k < 10:
           #Extract year of the award
           years = table.find('caption').find('big').findChildren('a', recursive=False)
           award_year = self.formatYear(years)
@@ -155,8 +147,19 @@ class AwardCrawler:
 
   def __str__(self):
       result = ''
+      k = 0
+      total_budget = 0
       for award in self.awards:
-          result +=  " " + str(award) + "\n"
+          if award.winner.budget.getAmount('USD').value != 0:
+              total_budget += award.winner.budget.getAmount('USD').value
+              k += 1
+
+          if k > 0:
+             av_budget = int(total_budget / k)
+          else:
+             av_budget = 0
+              
+          result +=  " " + str(award) + " Average Budget: " + str(av_budget) + " Total Budget: " + str(total_budget) + " Number of movies " + str(k) + "\n"
 
       return result
 
@@ -188,14 +191,18 @@ if __name__ == '__main__':
       "$6–7 million[1][2]"
       ]
   
-      logger.debug(budgets)
-      result = []
-      for budget in budgets:
-          result.append(str(AwardCrawler().formatBudget(budget)))
+      #logger.debug(budgets)
+      #result = []
+      #for budget in budgets:
+      #    result.append(str(AwardCrawler().formatBudget(budget)))
   
-      logger.debug(result)
+      #logger.debug(result)
 
-      #usd = Amount('USD', 1000000)
+      usd = Amount('USD', 1000000)
+      converted = usd.getValueConverted('GBP') 
+      logger.debug(converted)
+      converted = usd.getValueConverted('ADS') 
+      logger.debug(converted)
       #gbp = Amount('GBP', 20000)
       #budget = Budget(usd)
       #budget.addAmount(gbp)
@@ -217,4 +224,4 @@ if __name__ == '__main__':
       #logger.debug(str(budget2))
 
       #logger.debug(AwardCrawler().getBudget('http://en.wikipedia.org/wiki/Forrest_Gump'))
-      logger.debug(AwardCrawler().getBudget('http://en.wikipedia.org/wiki/The_Godfather'))
+      #logger.debug(AwardCrawler().getBudget('http://en.wikipedia.org/wiki/The_Godfather'))
