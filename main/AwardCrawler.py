@@ -10,8 +10,8 @@ from Amount import Amount
 from Budget import Budget
 from Award import Award
 
-import customLog
-logger = customLog.setup_custom_logger('root')
+import CustomLog
+logger = CustomLog.setup_custom_logger('root')
 
 
 class AwardCrawler:
