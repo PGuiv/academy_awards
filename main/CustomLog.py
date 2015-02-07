@@ -7,6 +7,10 @@ def setup_custom_logger(name, log_level = logging.DEBUG):
     logger = logging.getLogger(name)
 
     # create a file handler
+    log_dirs = os.path.join(os.path.dirname( __file__ ), '..', 'logs')
+    if not os.path.isdir(log_dirs):
+        os.mkdir(log_dirs)
+
     handler = logging.FileHandler(os.path.join(os.path.dirname( __file__ ), '..', 'logs', 'main.log'))
     handler.setLevel(logging.DEBUG)
 
