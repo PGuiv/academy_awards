@@ -12,7 +12,6 @@ from Award import Award
 
 import customLog
 logger = customLog.setup_custom_logger('root')
-logger.debug('main message')
 
 
 class AwardCrawler:
@@ -48,7 +47,7 @@ class AwardCrawler:
   
       k = 0
       for table in BeautifulSoup(response.text).select('.wikitable'):
-        if k < 10:
+        if k < 100:
           #Extract year of the award
           years = table.find('caption').find('big').findChildren('a', recursive=False)
           award_year = self.formatYear(years)
@@ -109,20 +108,28 @@ class AwardCrawler:
       return url
   
   def formatBudget(self, budgetText):
+      logger.debug("budgetText %s", budgetText)
       if re.match(r'\$(\d+(?:\S\d+)*(?:\,\d{0,3})*(?:\.\d{0,3})*\smillion)', budgetText):
         doll_value = self.cleanNumber(re.findall(r'\$(\d+(?:\,\d{0,3})*(?:\.\d{0,3})*)', budgetText)[0]) * 1000000
+        logger.debug('Match the first dollar case %s', doll_value)
       elif re.match(r'\$(\d+(?:\,\d{3})+(?:\.\d{0,3})*|\d+(?:\.\d{0,3})*)', budgetText):
         doll_value = self.cleanNumber(re.findall(r'\$(\d+(?:\,\d{3})+(?:\.\d{0,3})*|\d+(?:\.\d{0,3})*)', budgetText)[0])
+        logger.debug('Match the second dollar case %s', doll_value)
       else:
+        logger.debug('No match in dollar %s', budgetText)
         doll_value = 0 
   
       doll_amount = Amount('USD', doll_value) 
+      logger.debug("Here is the doll_value %s", doll_value)
 
       if re.match(r'£(\d+(?:\,\d{0,3})*(?:\.\d{0,3})*\smillion)', budgetText):
         pound_value = self.cleanNumber(re.findall(r'£(\d+(?:\,\d{0,3})*(?:\.\d{0,3})*)', budgetText)[0]) * 1000000
+        logger.debug('Match the first pound case %s', pound_value)
       elif re.match(r'£(\d+(?:\,\d{3})+(?:\.\d{0,3})*|\d+(?:\.\d{0,3})*)', budgetText):
         pound_value = self.cleanNumber(re.findall(r'£(\d+(?:\,\d{3})+(?:\.\d{0,3})*|\d+(?:\.\d{0,3})*)', budgetText)[0])
+        logger.debug('Match the second pound case %s', pound_value)
       else:
+        logger.debug('No match in pounds %s', budgetText)
         pound_value = 0
 
       pound_amount = Amount('GBP', pound_value) 
@@ -130,7 +137,8 @@ class AwardCrawler:
       if doll_value == '' and pound_value == '':
         logger.warning('NO BUDGET FOUND' + budgetText)
   
-      budget = Budget([doll_amount, pound_amount])
+      budget = Budget(doll_amount)
+      budget.addAmount(pound_amount)
 
       return budget
       
@@ -148,8 +156,10 @@ class AwardCrawler:
   def __str__(self):
       result = ''
       k = 0
+      l = 0
       total_budget = 0
       for award in self.awards:
+          l += 1
           if award.winner.budget.getAmount('USD').value != 0:
               total_budget += award.winner.budget.getAmount('USD').value
               k += 1
@@ -159,7 +169,7 @@ class AwardCrawler:
           else:
              av_budget = 0
               
-          result +=  " " + str(award) + " Average Budget: " + "{:,}".format(av_budget) + " Total Budget: " + "{:,}".format(total_budget) + " Number of movies " + str(k) + "\n"
+          result +=  " " + str(award) + " Average Budget: " + "{:,}".format(av_budget) + " Total Budget: " + "{:,}".format(total_budget) + " Number of movies with a budget: " + str(k) + " out of " + str(l) + " movies listed \n"
 
       return result
 
@@ -225,3 +235,4 @@ if __name__ == '__main__':
 
       #logger.debug(AwardCrawler().getBudget('http://en.wikipedia.org/wiki/Forrest_Gump'))
       #logger.debug(AwardCrawler().getBudget('http://en.wikipedia.org/wiki/The_Godfather'))
+      #logger.debug(AwardCrawler().getBudget('http://en.wikipedia.org/wiki/The_King%27s_Speech'))
