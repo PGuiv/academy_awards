@@ -19,9 +19,18 @@ class Amount(object):
             self.value = value
         
     def __str__(self):
-        return "%s%s" % (self.currency, int(self.value))
+        return "%s%s" % (self.currency, "{:,}".format(int(self.value)))
 
-    def getValueConverted(self, to_currency):
+    def getConvertedAmount(self, to_currency):
+        if to_currency == self.currency:
+            return self
+        elif to_currency in self.AVAILABLE_CURRENCIES:
+            return Amount(to_currency, self.getConvertedValue(to_currency))
+        else:
+            logger.warning("The currency %s is not available [%s]", to_currency, ', '.join(self.AVAILABLE_CURRENCIES))
+            return self 
+
+    def getConvertedValue(self, to_currency):
         if to_currency == self.currency:
             return self.value
         elif to_currency in self.AVAILABLE_CURRENCIES:

@@ -46,9 +46,6 @@ class AwardCrawler:
       except:
           logger.warning("Error with the URL: " + url)
   
-      #movies = {}
-      #logger.debug(response)
-  
       k = 0
       for table in BeautifulSoup(response.text).select('.wikitable'):
         if k < 10:
@@ -97,10 +94,6 @@ class AwardCrawler:
       
       return self.formatBudget(budget)
   
-  def averageBudget(movies):
-      """Calculates the average buget spent on winning movies since the creation"""
-      pass
-  
   @staticmethod
   def formatYear(years):
       result = []
@@ -145,6 +138,13 @@ class AwardCrawler:
   def cleanNumber(string):
       return float(string.strip().replace(',',''))
 
+  def getNoBudgetMovies(self):
+      empty_movies = []
+      for award in self.awards:
+          if award.winner.budget.isEmpty():
+              empty_movies.append(award.winner)
+      return empty_movies
+
   def __str__(self):
       result = ''
       k = 0
@@ -159,7 +159,7 @@ class AwardCrawler:
           else:
              av_budget = 0
               
-          result +=  " " + str(award) + " Average Budget: " + str(av_budget) + " Total Budget: " + str(total_budget) + " Number of movies " + str(k) + "\n"
+          result +=  " " + str(award) + " Average Budget: " + "{:,}".format(av_budget) + " Total Budget: " + "{:,}".format(total_budget) + " Number of movies " + str(k) + "\n"
 
       return result
 
@@ -168,7 +168,7 @@ class AwardCrawler:
   
 if __name__ == '__main__':
       #getBudget(absolutePath('/wiki/Wings_(1927_film)'))
-      #AwardCrawler().main()
+      AwardCrawler().main()
       #Crawler.printKeys()
   
       #TODO: PUT THAT IN TESTS
@@ -198,11 +198,11 @@ if __name__ == '__main__':
   
       #logger.debug(result)
 
-      usd = Amount('USD', 1000000)
-      converted = usd.getValueConverted('GBP') 
-      logger.debug(converted)
-      converted = usd.getValueConverted('ADS') 
-      logger.debug(converted)
+      #usd = Amount('USD', 1000000)
+      #converted = usd.getValueConverted('GBP') 
+      #logger.debug(converted)
+      #converted = usd.getValueConverted('ADS') 
+      #logger.debug(converted)
       #gbp = Amount('GBP', 20000)
       #budget = Budget(usd)
       #budget.addAmount(gbp)
