@@ -14,12 +14,9 @@ import CustomLog
 logger = CustomLog.setup_custom_logger('root', 'INFO')
 
 class AwardCrawler:
-
-    awards = []
-    top_domain = ''
-    main_url = ''
     
     def __init__(self, top_domain = "http://en.wikipedia.org/", main_url = "http://en.wikipedia.org/wiki/Academy_Award_for_Best_Picture"):
+        self.awards = []
         self.top_domain = top_domain
         self.main_url = main_url
     
@@ -29,49 +26,33 @@ class AwardCrawler:
         self.calculateAverageBudgets()
         logger.info(str(self))
     
-    def printKeys():
-        movies = self.get_awards(self.main_url) 
-    
-        logger.debug(movies)
-    
-        for year, data in movies.items():
-            logger.debug("Year: " + year + ", Title: " + data['title'] + ", budget: [dolls:" + str(data['budget']['dollars']) + ", pounds: " + str(data['budget']['pounds']) + "]")
-    
     def get_awards(self, url):
-        awards = []
         """Get the list of Movie Titles, the year of the award and the URL of the wikipedia permalink"""
+        awards = []
         try:
             response = requests.get(url)
         except:
             logger.warning("Error with the URL: " + url)
     
-        k = 0
         for table in BeautifulSoup(response.text).select('.wikitable'):
-            if k < 30:
-                #Extract year of the award
-                years = table.find('caption').find('big').findChildren('a', recursive=False)
-                award_year = self.formatYear(years)
+            years = table.find('caption').find('big').findChildren('a', recursive=False)
+            award_year = self.formatYear(years)
     
-                #Extract Movie URL
-                line = table.select('tr')[1].select('a')
-                #logger.debug(line)
-                movie_url = line[0]['href']
-                #movie_title = line[0]['title']
-                movie_title = line[0].text
-                #logger.debug(movie_url)
-                logger.debug(movie_title)
+            #Extract Movie URL
+            line = table.select('tr')[1].select('a')
+            movie_url = line[0]['href']
+            movie_title = line[0].text
+            logger.debug(movie_title)
     
-                budget = self.getBudget(self.absolutePath(movie_url))
-                winning_movie = Movie(movie_title, budget, movie_url) 
-                if len(award_year) > 1:
-                    award = Award(winning_movie, award_year[0], award_year[1])
-                else:
-                    award = Award(winning_movie, award_year[0])
+            budget = self.getBudget(self.absolutePath(movie_url))
+            winning_movie = Movie(movie_title, budget, movie_url) 
+            if len(award_year) > 1:
+                award = Award(winning_movie, award_year[0], award_year[1])
+            else:
+                award = Award(winning_movie, award_year[0])
 
 
-                awards.append(award)
-
-                k += 1
+            awards.append(award)
 
         return awards
     
@@ -79,7 +60,6 @@ class AwardCrawler:
         """Get the budget for each movie, based on wikipedia permalink"""
         try:
             response = requests.get(movie_url)
-            logger.debug(response.encoding)
         except:
             logger.warning("Problem with the URL: " + movie_url)
     
@@ -96,6 +76,7 @@ class AwardCrawler:
     
     @staticmethod
     def formatYear(years):
+        """Format the year"""
         result = []
         for year in years:
             result.append(str(year.encode_contents().decode("utf-8")))
@@ -104,14 +85,16 @@ class AwardCrawler:
         return result
     
     def absolutePath(self, relative_path):
+        """Builds the URL based on relative path and main domain name"""
         url = urlparse.urljoin(self.top_domain, relative_path)
         logger.debug(url)
         return url
     
     def formatBudget(self, budgetText):
+        """Builds Budget based on the value and currency found in the HTML"""
         logger.debug("budgetText %s", budgetText)
-        if re.match(r'\w*\$(\d+(?:\S\d+)*(?:\,\d{0,3})*(?:\.\d{0,3})*\smillion)', budgetText):
-            doll_value = self.cleanNumber(re.findall(r'\w*\$(\d+(?:\,\d{0,3})*(?:\.\d{0,3})*)', budgetText)[0]) * 1000000
+        if re.match(r'.*\W*\w*\$(\d+(?:\S\d+)*(?:\,\d{0,3})*(?:\.\d{0,3})*\smillion)', budgetText):
+            doll_value = self.cleanNumber(re.findall(r'\W*\w*\$(\d+(?:\,\d{0,3})*(?:\.\d{0,3})*)', budgetText)[0]) * 1000000
             logger.debug('Match the first dollar case %s', doll_value)
         elif re.match(r'\w*\$(\d+(?:\,\d{3})+(?:\.\d{0,3})*|\d+(?:\.\d{0,3})*)', budgetText):
             doll_value = self.cleanNumber(re.findall(r'\w*\$(\d+(?:\,\d{3})+(?:\.\d{0,3})*|\d+(?:\.\d{0,3})*)', budgetText)[0])
@@ -145,12 +128,16 @@ class AwardCrawler:
         
     @staticmethod
     def cleanNumber(string):
+        """Convert String to float"""
         return float(string.strip().replace(',',''))
 
     def getNoBudgetMovies(self):
+        """Returns the list of movies with no budget"""
         empty_movies = []
         for award in self.awards:
-            if award.winner.budget.isEmpty():
+            logger.debug(str(award))
+            if award.winner.budget.getAmount(Budget().main_currency) == 0:
+                logger.debug(str(award))
                 empty_movies.append(award.winner)
         return empty_movies
 
@@ -177,86 +164,14 @@ class AwardCrawler:
         result = ''
         for award in self.awards:
             result +=  " " + str(award) + " Average Budget: " + "{:,}".format(award.average_budget) + "\n" 
-            #+ " Total Budget: " + "{:,}".format(total_budget) + " Number of movies with a budget: " + str(k) + " out of " + str(l) + " movies listed \n"
 
         return result
 
-    
-
-  
 if __name__ == '__main__':
-      #getBudget(absolutePath('/wiki/Wings_(1927_film)'))
-      AwardCrawler().main()
-      #Crawler.printKeys()
-  
-      #TODO: PUT THAT IN TESTS
-      budgets = [
-      "$6 million[1][2]", 
-      "$750,000[1]", 
-      "$1,650,000", 
-      "$1,985,000[1]", 
-      "£8 million ($15 million)[3]", 
-      "US$1,644,736 (est.)", 
-      "$2,840,000.[2]", 
-      "£527,530[1]", 
-      "£3 million",
-      "£3.1 million",
-      "$3.1 million",
-      "US$2 million[4]",
-      "$2.183 million",
-      "$55 million",
-      "$6-7 million",
-      "$6–7 million[1][2]"
-      ]
-  
-      #logger.debug(budgets)
-      #result = []
-      #for budget in budgets:
-      #    result.append(str(AwardCrawler().formatBudget(budget)))
-  
-      #logger.debug(result)
-
-      usd = Amount('USD', 1000000)
-      #converted = usd.getValueConverted('GBP') 
-      #logger.debug(converted)
-      #converted = usd.getValueConverted('ADS') 
-      #logger.debug(converted)
-      #gbp = Amount('GBP', 20000)
-      budget = Budget(usd)
-      #budget.addAmount(gbp)
-      #movie = Movie('My Title', budget, '/super/movie')
-      #logger.debug('TEST')
-      #logger.debug(str(movie))
-      #award = Award(movie, ['2014','2015'])
-      #logger.debug(str(award))
-
-      award1 = Award(Movie('title1', budget, '/link1'), 2014)
-      award2 = Award(Movie('title2', budget, '/link2'), 2012)
-      award3 = Award(Movie('title3', budget, '/link3'), 2015)
-
-      crawl = AwardCrawler()
-
-      crawl.awards.append(award1)
-      crawl.awards.append(award2)
-      crawl.awards.append(award3)
-
-     # for award in crawl.awards:
-     #     logger.debug(str(award))
-
-     # crawl.sortAwards()
-
-     # for award in crawl.awards:
-     #     logger.debug(str(award))
-
-      #usd1 = Amount('USD', 1000000)
-      #usd2 = Amount('USD', 2000000)
-
-      #budget1 = Budget(usd1)
-      #budget2 = Budget(usd2)
-
-      #logger.debug(str(budget1))
-      #logger.debug(str(budget2))
-
-      #logger.debug(AwardCrawler().getBudget('http://en.wikipedia.org/wiki/Forrest_Gump'))
-      #logger.debug(AwardCrawler().getBudget('http://en.wikipedia.org/wiki/The_Godfather'))
-      #logger.debug(AwardCrawler().getBudget('http://en.wikipedia.org/wiki/The_King%27s_Speech'))
+      award = AwardCrawler()
+      award.main()
+      movies = award.getNoBudgetMovies()
+      logger.warning("Print empty budget movies")
+      for movie in movies:
+          logger.debug(str(movie))
+      logger.warning('END')
