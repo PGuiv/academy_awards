@@ -11,7 +11,7 @@ from Budget import Budget
 from Award import Award
 
 import CustomLog
-logger = CustomLog.setup_custom_logger('root')
+logger = CustomLog.setup_custom_logger('root', 'INFO')
 
 class AwardCrawler:
 
@@ -27,7 +27,7 @@ class AwardCrawler:
         """Main entry point for the script."""
         self.awards = self.get_awards(self.main_url)
         self.calculateAverageBudgets()
-        logger.debug(str(self))
+        logger.info(str(self))
     
     def printKeys():
         movies = self.get_awards(self.main_url) 
@@ -47,7 +47,7 @@ class AwardCrawler:
     
         k = 0
         for table in BeautifulSoup(response.text).select('.wikitable'):
-            if k < 10:
+            if k < 30:
                 #Extract year of the award
                 years = table.find('caption').find('big').findChildren('a', recursive=False)
                 award_year = self.formatYear(years)
@@ -110,11 +110,11 @@ class AwardCrawler:
     
     def formatBudget(self, budgetText):
         logger.debug("budgetText %s", budgetText)
-        if re.match(r'\$(\d+(?:\S\d+)*(?:\,\d{0,3})*(?:\.\d{0,3})*\smillion)', budgetText):
-            doll_value = self.cleanNumber(re.findall(r'\$(\d+(?:\,\d{0,3})*(?:\.\d{0,3})*)', budgetText)[0]) * 1000000
+        if re.match(r'\w*\$(\d+(?:\S\d+)*(?:\,\d{0,3})*(?:\.\d{0,3})*\smillion)', budgetText):
+            doll_value = self.cleanNumber(re.findall(r'\w*\$(\d+(?:\,\d{0,3})*(?:\.\d{0,3})*)', budgetText)[0]) * 1000000
             logger.debug('Match the first dollar case %s', doll_value)
-        elif re.match(r'\$(\d+(?:\,\d{3})+(?:\.\d{0,3})*|\d+(?:\.\d{0,3})*)', budgetText):
-            doll_value = self.cleanNumber(re.findall(r'\$(\d+(?:\,\d{3})+(?:\.\d{0,3})*|\d+(?:\.\d{0,3})*)', budgetText)[0])
+        elif re.match(r'\w*\$(\d+(?:\,\d{3})+(?:\.\d{0,3})*|\d+(?:\.\d{0,3})*)', budgetText):
+            doll_value = self.cleanNumber(re.findall(r'\w*\$(\d+(?:\,\d{3})+(?:\.\d{0,3})*|\d+(?:\.\d{0,3})*)', budgetText)[0])
             logger.debug('Match the second dollar case %s', doll_value)
         else:
             logger.debug('No match in dollar %s', budgetText)
@@ -123,11 +123,11 @@ class AwardCrawler:
         doll_amount = Amount('USD', doll_value) 
         logger.debug("Here is the doll_value %s", doll_value)
 
-        if re.match(r'£(\d+(?:\,\d{0,3})*(?:\.\d{0,3})*\smillion)', budgetText):
-            pound_value = self.cleanNumber(re.findall(r'£(\d+(?:\,\d{0,3})*(?:\.\d{0,3})*)', budgetText)[0]) * 1000000
+        if re.match(r'\w*£(\d+(?:\,\d{0,3})*(?:\.\d{0,3})*\smillion)', budgetText):
+            pound_value = self.cleanNumber(re.findall(r'\w*£(\d+(?:\,\d{0,3})*(?:\.\d{0,3})*)', budgetText)[0]) * 1000000
             logger.debug('Match the first pound case %s', pound_value)
-        elif re.match(r'£(\d+(?:\,\d{3})+(?:\.\d{0,3})*|\d+(?:\.\d{0,3})*)', budgetText):
-            pound_value = self.cleanNumber(re.findall(r'£(\d+(?:\,\d{3})+(?:\.\d{0,3})*|\d+(?:\.\d{0,3})*)', budgetText)[0])
+        elif re.match(r'\w*£(\d+(?:\,\d{3})+(?:\.\d{0,3})*|\d+(?:\.\d{0,3})*)', budgetText):
+            pound_value = self.cleanNumber(re.findall(r'\w*£(\d+(?:\,\d{3})+(?:\.\d{0,3})*|\d+(?:\.\d{0,3})*)', budgetText)[0])
             logger.debug('Match the second pound case %s', pound_value)
         else:
             logger.debug('No match in pounds %s', budgetText)
