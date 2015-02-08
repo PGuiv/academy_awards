@@ -26,6 +26,7 @@ class AwardCrawler:
     def main(self):
         """Main entry point for the script."""
         self.awards = self.get_awards(self.main_url)
+        self.calculateAverageBudgets()
         logger.debug(str(self))
     
     def printKeys():
@@ -153,23 +154,30 @@ class AwardCrawler:
                 empty_movies.append(award.winner)
         return empty_movies
 
-    def __str__(self):
-        result = ''
+    def calculateAverageBudgets(self):
+        self.sortAwards()
+        
         k = 0
-        l = 0
         total_budget = 0
         for award in self.awards:
-            l += 1
             if award.winner.budget.getAmount('USD').value != 0:
-                total_budget += award.winner.budget.getAmount('USD').value
                 k += 1
+                total_budget += award.winner.budget.getAmount('USD').value
 
             if k > 0:
-               av_budget = int(total_budget / k)
+               award.average_budget = int(total_budget / k)
             else:
-               av_budget = 0
-                
-            result +=  " " + str(award) + " Average Budget: " + "{:,}".format(av_budget) + " Total Budget: " + "{:,}".format(total_budget) + " Number of movies with a budget: " + str(k) + " out of " + str(l) + " movies listed \n"
+               award.average_budget = 0
+
+
+    def sortAwards(self):
+        self.awards = sorted(self.awards, key=lambda award: award.main_year)
+
+    def __str__(self):
+        result = ''
+        for award in self.awards:
+            result +=  " " + str(award) + " Average Budget: " + "{:,}".format(award.average_budget) + "\n" 
+            #+ " Total Budget: " + "{:,}".format(total_budget) + " Number of movies with a budget: " + str(k) + " out of " + str(l) + " movies listed \n"
 
         return result
 
@@ -208,13 +216,13 @@ if __name__ == '__main__':
   
       #logger.debug(result)
 
-      #usd = Amount('USD', 1000000)
+      usd = Amount('USD', 1000000)
       #converted = usd.getValueConverted('GBP') 
       #logger.debug(converted)
       #converted = usd.getValueConverted('ADS') 
       #logger.debug(converted)
       #gbp = Amount('GBP', 20000)
-      #budget = Budget(usd)
+      budget = Budget(usd)
       #budget.addAmount(gbp)
       #movie = Movie('My Title', budget, '/super/movie')
       #logger.debug('TEST')
@@ -222,7 +230,23 @@ if __name__ == '__main__':
       #award = Award(movie, ['2014','2015'])
       #logger.debug(str(award))
 
+      award1 = Award(Movie('title1', budget, '/link1'), 2014)
+      award2 = Award(Movie('title2', budget, '/link2'), 2012)
+      award3 = Award(Movie('title3', budget, '/link3'), 2015)
 
+      crawl = AwardCrawler()
+
+      crawl.awards.append(award1)
+      crawl.awards.append(award2)
+      crawl.awards.append(award3)
+
+     # for award in crawl.awards:
+     #     logger.debug(str(award))
+
+     # crawl.sortAwards()
+
+     # for award in crawl.awards:
+     #     logger.debug(str(award))
 
       #usd1 = Amount('USD', 1000000)
       #usd2 = Amount('USD', 2000000)
