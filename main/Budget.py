@@ -30,6 +30,7 @@ class Budget(object):
             self.amounts.append(amount)
         else:
             logger.warning("The amount %s could not be found", str(amount))
+            self.addAmount(amount)
 
 
     def addAmount(self, amount, convert = True):
