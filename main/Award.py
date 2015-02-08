@@ -5,6 +5,8 @@ class Award(object):
         self.main_year = main_year
         self.extra_year = extra_year
 
+        self.average_budget = 0
+
     def __str__(self):
         if self.extra_year:
             return "Year: %s - %s, Movie: [%s]" % (self.main_year, self.extra_year, self.winner)
