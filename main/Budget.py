@@ -1,7 +1,7 @@
 from Amount import Amount
 
-import CustomLog
-logger = CustomLog.setup_custom_logger('root')
+import logging
+logger = logging.getLogger('root')
 
 class Budget(object):
 
@@ -15,7 +15,11 @@ class Budget(object):
     def __str__(self):
         result = ''
         for amount in self.amounts:
-            result +=  " " + str(amount)
+            if amount.currency == self.main_currency:
+                result =  str(amount) + " " + result
+            else:
+                if amount.value > 0:
+                    result += " (" + str(amount) + ")" 
 
         return result
     
