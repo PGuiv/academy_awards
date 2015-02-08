@@ -13,165 +13,165 @@ from Award import Award
 import CustomLog
 logger = CustomLog.setup_custom_logger('root')
 
-
 class AwardCrawler:
 
-  awards = []
-  top_domain = ''
-  main_url = ''
-  
-  def __init__(self, top_domain = "http://en.wikipedia.org/", main_url = "http://en.wikipedia.org/wiki/Academy_Award_for_Best_Picture"):
-      self.top_domain = top_domain
-      self.main_url = main_url
-  
-  def main(self):
-      """Main entry point for the script."""
-      self.awards = self.get_awards(self.main_url)
-      logger.debug(str(self))
-  
-  def printKeys():
-      movies = self.get_awards(self.main_url) 
-  
-      logger.debug(movies)
-  
-      for year, data in movies.items():
-          logger.debug("Year: " + year + ", Title: " + data['title'] + ", budget: [dolls:" + str(data['budget']['dollars']) + ", pounds: " + str(data['budget']['pounds']) + "]")
-  
-  def get_awards(self, url):
-      awards = []
-      """Get the list of Movie Titles, the year of the award and the URL of the wikipedia permalink"""
-      try:
-          response = requests.get(url)
-      except:
-          logger.warning("Error with the URL: " + url)
-  
-      k = 0
-      for table in BeautifulSoup(response.text).select('.wikitable'):
-        if k < 100:
-          #Extract year of the award
-          years = table.find('caption').find('big').findChildren('a', recursive=False)
-          award_year = self.formatYear(years)
-  
-          #Extract Movie URL
-          line = table.select('tr')[1].select('a')
-          #logger.debug(line)
-          movie_url = line[0]['href']
-          movie_title = line[0]['title']
-          #logger.debug(movie_url)
-          logger.debug(movie_title)
-  
-          budget = self.getBudget(self.absolutePath(movie_url))
-          winning_movie = Movie(movie_title, budget, movie_url) 
-          if len(award_year) > 1:
-            award = Award(winning_movie, award_year[0], award_year[1])
-          else:
-            award = Award(winning_movie, award_year[0])
+    awards = []
+    top_domain = ''
+    main_url = ''
+    
+    def __init__(self, top_domain = "http://en.wikipedia.org/", main_url = "http://en.wikipedia.org/wiki/Academy_Award_for_Best_Picture"):
+        self.top_domain = top_domain
+        self.main_url = main_url
+    
+    def main(self):
+        """Main entry point for the script."""
+        self.awards = self.get_awards(self.main_url)
+        logger.debug(str(self))
+    
+    def printKeys():
+        movies = self.get_awards(self.main_url) 
+    
+        logger.debug(movies)
+    
+        for year, data in movies.items():
+            logger.debug("Year: " + year + ", Title: " + data['title'] + ", budget: [dolls:" + str(data['budget']['dollars']) + ", pounds: " + str(data['budget']['pounds']) + "]")
+    
+    def get_awards(self, url):
+        awards = []
+        """Get the list of Movie Titles, the year of the award and the URL of the wikipedia permalink"""
+        try:
+            response = requests.get(url)
+        except:
+            logger.warning("Error with the URL: " + url)
+    
+        k = 0
+        for table in BeautifulSoup(response.text).select('.wikitable'):
+            if k < 10:
+                #Extract year of the award
+                years = table.find('caption').find('big').findChildren('a', recursive=False)
+                award_year = self.formatYear(years)
+    
+                #Extract Movie URL
+                line = table.select('tr')[1].select('a')
+                #logger.debug(line)
+                movie_url = line[0]['href']
+                #movie_title = line[0]['title']
+                movie_title = line[0].text
+                #logger.debug(movie_url)
+                logger.debug(movie_title)
+    
+                budget = self.getBudget(self.absolutePath(movie_url))
+                winning_movie = Movie(movie_title, budget, movie_url) 
+                if len(award_year) > 1:
+                    award = Award(winning_movie, award_year[0], award_year[1])
+                else:
+                    award = Award(winning_movie, award_year[0])
 
 
-          awards.append(award)
+                awards.append(award)
 
-          k += 1
+                k += 1
 
-      return awards
-  
-  def getBudget(self, movie_url):
-      """Get the budget for each movie, based on wikipedia permalink"""
-      try:
-          response = requests.get(movie_url)
-          logger.debug(response.encoding)
-      except:
-          logger.warning("Problem with the URL: " + movie_url)
-  
-      box =  BeautifulSoup(response.text).select('.infobox')[0]
-      if box.find('th', text='Budget'):
-          budget_tag = box.find('th', text='Budget').parent()[1]
-          logger.debug(budget_tag)
-          budget = budget_tag.text
-      else:
-          budget = ''
-      logger.debug(budget)
-      
-      return self.formatBudget(budget)
-  
-  @staticmethod
-  def formatYear(years):
-      result = []
-      for year in years:
-          result.append(str(year.encode_contents().decode("utf-8")))
-  
-      logger.debug(result[0])
-      return result
-  
-  def absolutePath(self, relative_path):
-      url = urlparse.urljoin(self.top_domain, relative_path)
-      logger.debug(url)
-      return url
-  
-  def formatBudget(self, budgetText):
-      logger.debug("budgetText %s", budgetText)
-      if re.match(r'\$(\d+(?:\S\d+)*(?:\,\d{0,3})*(?:\.\d{0,3})*\smillion)', budgetText):
-        doll_value = self.cleanNumber(re.findall(r'\$(\d+(?:\,\d{0,3})*(?:\.\d{0,3})*)', budgetText)[0]) * 1000000
-        logger.debug('Match the first dollar case %s', doll_value)
-      elif re.match(r'\$(\d+(?:\,\d{3})+(?:\.\d{0,3})*|\d+(?:\.\d{0,3})*)', budgetText):
-        doll_value = self.cleanNumber(re.findall(r'\$(\d+(?:\,\d{3})+(?:\.\d{0,3})*|\d+(?:\.\d{0,3})*)', budgetText)[0])
-        logger.debug('Match the second dollar case %s', doll_value)
-      else:
-        logger.debug('No match in dollar %s', budgetText)
-        doll_value = 0 
-  
-      doll_amount = Amount('USD', doll_value) 
-      logger.debug("Here is the doll_value %s", doll_value)
+        return awards
+    
+    def getBudget(self, movie_url):
+        """Get the budget for each movie, based on wikipedia permalink"""
+        try:
+            response = requests.get(movie_url)
+            logger.debug(response.encoding)
+        except:
+            logger.warning("Problem with the URL: " + movie_url)
+    
+        box =  BeautifulSoup(response.text).select('.infobox')[0]
+        if box.find('th', text='Budget'):
+            budget_tag = box.find('th', text='Budget').parent()[1]
+            logger.debug(budget_tag)
+            budget = budget_tag.text
+        else:
+            budget = ''
+        logger.debug(budget)
+        
+        return self.formatBudget(budget)
+    
+    @staticmethod
+    def formatYear(years):
+        result = []
+        for year in years:
+            result.append(str(year.encode_contents().decode("utf-8")))
+    
+        logger.debug(result[0])
+        return result
+    
+    def absolutePath(self, relative_path):
+        url = urlparse.urljoin(self.top_domain, relative_path)
+        logger.debug(url)
+        return url
+    
+    def formatBudget(self, budgetText):
+        logger.debug("budgetText %s", budgetText)
+        if re.match(r'\$(\d+(?:\S\d+)*(?:\,\d{0,3})*(?:\.\d{0,3})*\smillion)', budgetText):
+            doll_value = self.cleanNumber(re.findall(r'\$(\d+(?:\,\d{0,3})*(?:\.\d{0,3})*)', budgetText)[0]) * 1000000
+            logger.debug('Match the first dollar case %s', doll_value)
+        elif re.match(r'\$(\d+(?:\,\d{3})+(?:\.\d{0,3})*|\d+(?:\.\d{0,3})*)', budgetText):
+            doll_value = self.cleanNumber(re.findall(r'\$(\d+(?:\,\d{3})+(?:\.\d{0,3})*|\d+(?:\.\d{0,3})*)', budgetText)[0])
+            logger.debug('Match the second dollar case %s', doll_value)
+        else:
+            logger.debug('No match in dollar %s', budgetText)
+            doll_value = 0 
+    
+        doll_amount = Amount('USD', doll_value) 
+        logger.debug("Here is the doll_value %s", doll_value)
 
-      if re.match(r'£(\d+(?:\,\d{0,3})*(?:\.\d{0,3})*\smillion)', budgetText):
-        pound_value = self.cleanNumber(re.findall(r'£(\d+(?:\,\d{0,3})*(?:\.\d{0,3})*)', budgetText)[0]) * 1000000
-        logger.debug('Match the first pound case %s', pound_value)
-      elif re.match(r'£(\d+(?:\,\d{3})+(?:\.\d{0,3})*|\d+(?:\.\d{0,3})*)', budgetText):
-        pound_value = self.cleanNumber(re.findall(r'£(\d+(?:\,\d{3})+(?:\.\d{0,3})*|\d+(?:\.\d{0,3})*)', budgetText)[0])
-        logger.debug('Match the second pound case %s', pound_value)
-      else:
-        logger.debug('No match in pounds %s', budgetText)
-        pound_value = 0
+        if re.match(r'£(\d+(?:\,\d{0,3})*(?:\.\d{0,3})*\smillion)', budgetText):
+            pound_value = self.cleanNumber(re.findall(r'£(\d+(?:\,\d{0,3})*(?:\.\d{0,3})*)', budgetText)[0]) * 1000000
+            logger.debug('Match the first pound case %s', pound_value)
+        elif re.match(r'£(\d+(?:\,\d{3})+(?:\.\d{0,3})*|\d+(?:\.\d{0,3})*)', budgetText):
+            pound_value = self.cleanNumber(re.findall(r'£(\d+(?:\,\d{3})+(?:\.\d{0,3})*|\d+(?:\.\d{0,3})*)', budgetText)[0])
+            logger.debug('Match the second pound case %s', pound_value)
+        else:
+            logger.debug('No match in pounds %s', budgetText)
+            pound_value = 0
 
-      pound_amount = Amount('GBP', pound_value) 
-  
-      if doll_value == '' and pound_value == '':
-        logger.warning('NO BUDGET FOUND' + budgetText)
-  
-      budget = Budget(doll_amount)
-      budget.addAmount(pound_amount)
+        pound_amount = Amount('GBP', pound_value) 
+    
+        if doll_value == '' and pound_value == '':
+            logger.warning('NO BUDGET FOUND' + budgetText)
+    
+        budget = Budget(doll_amount)
+        budget.addAmount(pound_amount)
 
-      return budget
-      
-  @staticmethod
-  def cleanNumber(string):
-      return float(string.strip().replace(',',''))
+        return budget
+        
+    @staticmethod
+    def cleanNumber(string):
+        return float(string.strip().replace(',',''))
 
-  def getNoBudgetMovies(self):
-      empty_movies = []
-      for award in self.awards:
-          if award.winner.budget.isEmpty():
-              empty_movies.append(award.winner)
-      return empty_movies
+    def getNoBudgetMovies(self):
+        empty_movies = []
+        for award in self.awards:
+            if award.winner.budget.isEmpty():
+                empty_movies.append(award.winner)
+        return empty_movies
 
-  def __str__(self):
-      result = ''
-      k = 0
-      l = 0
-      total_budget = 0
-      for award in self.awards:
-          l += 1
-          if award.winner.budget.getAmount('USD').value != 0:
-              total_budget += award.winner.budget.getAmount('USD').value
-              k += 1
+    def __str__(self):
+        result = ''
+        k = 0
+        l = 0
+        total_budget = 0
+        for award in self.awards:
+            l += 1
+            if award.winner.budget.getAmount('USD').value != 0:
+                total_budget += award.winner.budget.getAmount('USD').value
+                k += 1
 
-          if k > 0:
-             av_budget = int(total_budget / k)
-          else:
-             av_budget = 0
-              
-          result +=  " " + str(award) + " Average Budget: " + "{:,}".format(av_budget) + " Total Budget: " + "{:,}".format(total_budget) + " Number of movies with a budget: " + str(k) + " out of " + str(l) + " movies listed \n"
+            if k > 0:
+               av_budget = int(total_budget / k)
+            else:
+               av_budget = 0
+                
+            result +=  " " + str(award) + " Average Budget: " + "{:,}".format(av_budget) + " Total Budget: " + "{:,}".format(total_budget) + " Number of movies with a budget: " + str(k) + " out of " + str(l) + " movies listed \n"
 
-      return result
+        return result
 
     
 

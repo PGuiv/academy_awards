@@ -1,7 +1,6 @@
-#Or MonetaryValue
 import logging
-
 logger = logging.getLogger('root') 
+
 class Amount(object):
     AVAILABLE_CURRENCIES = ['USD', 'GBP']
     CONVERSION_RATES = {

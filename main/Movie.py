@@ -1,7 +1,6 @@
 class Movie(object):
 
     def __init__(self, title, budget, link):
-        #TODO: Add class tests.
         self.title = title
         self.budget = budget
         self.link = link
