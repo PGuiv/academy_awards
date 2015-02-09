@@ -35,24 +35,27 @@ class AwardCrawler:
             logger.warning("Error with the URL: " + url)
     
         for table in BeautifulSoup(response.text).select('.wikitable'):
-            years = table.find('caption').find('big').findChildren('a', recursive=False)
-            award_year = self.formatYear(years)
     
             #Extract Movie URL
-            line = table.select('tr')[1].select('a')
-            movie_url = line[0]['href']
-            movie_title = line[0].text
-            logger.debug(movie_title)
+            tr = table.select('tr')[1]
+            if tr.has_key('style') and re.findall('background:#FAEB86', tr['style']):
+              line = table.select('tr')[1].select('a')
+              movie_url = line[0]['href']
+              movie_title = line[0].text
+              logger.debug(movie_title)
     
-            budget = self.getBudget(self.absolutePath(movie_url))
-            winning_movie = Movie(movie_title, budget, movie_url) 
-            if len(award_year) > 1:
-                award = Award(winning_movie, award_year[0], award_year[1])
-            else:
-                award = Award(winning_movie, award_year[0])
+              budget = self.getBudget(self.absolutePath(movie_url))
+              winning_movie = Movie(movie_title, budget, movie_url) 
+              years = table.find('caption').find('big').findChildren('a', recursive=False)
+              award_year = self.formatYear(years)
+
+              if len(award_year) > 1:
+                  award = Award(winning_movie, award_year[0], award_year[1])
+              else:
+                  award = Award(winning_movie, award_year[0])
 
 
-            awards.append(award)
+              awards.append(award)
 
         return awards
     
@@ -170,8 +173,3 @@ class AwardCrawler:
 if __name__ == '__main__':
       award = AwardCrawler()
       award.main()
-      movies = award.getNoBudgetMovies()
-      logger.warning("Print empty budget movies")
-      for movie in movies:
-          logger.debug(str(movie))
-      logger.warning('END')
